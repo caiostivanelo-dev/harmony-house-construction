@@ -1,13 +1,14 @@
 runConfig:
   runtime: nodejs18
-
   rootDir: apps/api
-
   startCommand: npm run start
-
   env:
     NODE_ENV: production
     PORT: "3000"
     DATABASE_URL: "dummy"
     JWT_SECRET: "dummy"
     FRONTEND_URL: "http://localhost"
+
+healthCheck:
+  path: /
+  timeoutSeconds: 60
