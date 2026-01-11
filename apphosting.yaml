@@ -1,5 +1,10 @@
 runConfig:
   runtime: nodejs18
+
+  rootDir: apps/api
+
+  startCommand: npm run start
+
   env:
     NODE_ENV: production
     PORT: "3000"
