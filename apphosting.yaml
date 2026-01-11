@@ -8,7 +8,6 @@ runConfig:
     DATABASE_URL: "dummy"
     JWT_SECRET: "dummy"
     FRONTEND_URL: "http://localhost"
-
-healthCheck:
-  path: /
-  timeoutSeconds: 60
+  healthCheck:
+    path: /
+    timeoutSeconds: 60
