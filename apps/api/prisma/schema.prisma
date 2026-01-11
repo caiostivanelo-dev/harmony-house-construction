@@ -1,0 +1,166 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Seed script configuration
+// Run with: npm run prisma:seed
+
+// SQLite não suporta enums, usando String
+
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  password      String
+  role          String   @default("WORKER") // ADMIN, MANAGER, WORKER, SALES
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  assignedTasks Task[]   @relation("TaskAssignments")
+  timeLogs      TimeLog[]
+
+  @@index([companyId])
+  @@index([email])
+}
+
+model Company {
+  id                   String    @id @default(uuid())
+  name                 String
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  plan                 String?   @default("STARTER") // STARTER, PRO, ENTERPRISE
+  subscriptionStatus   String?   // ACTIVE, TRIALING, PAST_DUE, CANCELED, INCOMPLETE
+  trialEndsAt          DateTime?
+  // Branding fields
+  displayName          String?   // Company display name (fallback to name)
+  logoUrl              String?   // Hosted logo URL
+  primaryColor         String?   // Primary brand color (hex)
+  accentColor          String?   // Accent brand color (hex)
+  emailFromName        String?   // Email sender name override
+  emailFromAddress     String?   // Email sender address override
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  users     User[]
+  customers Customer[]
+  projects  Project[]
+}
+
+model Customer {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name       String
+  emails     String   // JSON string: { work: string, personal?: string }
+  phones     String   // JSON string: { work: string, personal?: string }
+  addresses  String   // JSON string: [{ street, city, state, zip, country }]
+  leadSource String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  projects  Project[]
+  documents Document[]
+
+  @@index([companyId])
+  @@index([name])
+}
+
+model Project {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name       String
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tasks     Task[]
+  documents Document[]
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([status])
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  projectId  String?
+  project    Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type       String   // ESTIMATE, INVOICE, CHANGE_ORDER
+  status     String   @default("DRAFT") // DRAFT, PENDING, ACCEPTED, PAID, OVERDUE
+  number     String   @unique
+  totalValue Float    @default(0)
+  balanceDue Float    @default(0)
+  sentDate   DateTime?
+  dueDate    DateTime?
+  // Estimate-specific fields (JSON)
+  estimateDate       DateTime? // Date of estimate
+  projectDates         String?  // Dates of project (e.g., "TBT")
+  preparedBy         String?   // Estimate prepared by
+  validityDays       Int?      // Validity in days (default 30)
+  notes              String?   // General notes
+  introduction       String?   // Introduction text for estimate
+  taxRate            Float?    // Tax rate percentage (e.g., 10.0 for 10%)
+  items              String?   // JSON array: [{ section, items: [{ type, name, hours?, quantity?, companyCost, customerPrice, tax, visible }] }]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([projectId])
+  @@index([type])
+  @@index([status])
+}
+
+model Task {
+  id            String   @id @default(uuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title         String
+  date          DateTime
+  duration      Float    @default(0) // hours
+  notes         String?
+  status        String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  assignedUsers User[]   @relation("TaskAssignments")
+  timeLogs      TimeLog[]
+
+  @@index([projectId])
+  @@index([date])
+  @@index([status])
+}
+
+model TimeLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  date      DateTime
+  hours     Float
+  type      String   @default("REGULAR") // REGULAR, OVERTIME
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([taskId])
+  @@index([date])
+  @@index([approved])
+}

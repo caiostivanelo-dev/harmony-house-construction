@@ -1,0 +1,29 @@
+{
+  "name": "harmony-house-saas",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n \"API,WEB\" -c \"blue,green\" --kill-others-on-fail \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:api": "npm run start:dev --workspace=apps/api",
+    "build": "npm run build --workspaces",
+    "build:web": "npm run build --workspace=apps/web",
+    "build:api": "npm run build --workspace=apps/api",
+    "lint": "npm run lint --workspaces",
+    "setup": "PowerShell -ExecutionPolicy Bypass -File setup-completo.ps1",
+    "postgres:start": "docker-compose up -d postgres",
+    "postgres:stop": "docker-compose down",
+    "clean": "PowerShell -ExecutionPolicy Bypass -File limpar-tudo.ps1",
+    "deploy": "npm run build:web && firebase deploy --only hosting",
+    "preview:web": "npm run preview --workspace=apps/web"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "react-hook-form": "^7.70.0"
+  }
+}
